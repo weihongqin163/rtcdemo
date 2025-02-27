@@ -67,8 +67,37 @@ struct VadDataV2 {
         memset (&audio_frame, 0, sizeof(audio_frame));
     }
     // 禁用拷贝构造和赋值操作符
-    VadDataV2(const VadDataV2&) = delete;
-    VadDataV2& operator=(const VadDataV2&) = delete;
+    VadDataV2( VadDataV2&& other)
+    {
+        audio_frame = (other.audio_frame);
+        audio_buffer = std::move(other.audio_buffer);
+        is_activity = other.is_activity;
+    }
+       // 拷贝构造函数
+    VadDataV2(const VadDataV2& other)
+        : audio_frame(other.audio_frame),
+          is_activity(other.is_activity),
+          audio_buffer(other.audio_buffer) {}
+    
+    // 移动赋值运算符
+    VadDataV2& operator=(VadDataV2&& other) noexcept {
+        if (this != &other) {
+            audio_frame = other.audio_frame;
+            is_activity = other.is_activity;
+            audio_buffer = std::move(other.audio_buffer);
+        }
+        return *this;
+    }
+    
+    // 拷贝赋值运算符
+    VadDataV2& operator=(const VadDataV2& other) {
+        if (this != &other) {
+            audio_frame = other.audio_frame;
+            is_activity = other.is_activity;
+            audio_buffer = other.audio_buffer;
+        }
+        return *this;
+    }
 
 };
 
@@ -85,6 +114,13 @@ public:
             dq_.pop_front();
         }
         dq_.push_back(value);
+    }
+     // 添加移动语义支持
+    void push(T&& value) {
+        if (dq_.size() >= max_size_) {
+            dq_.pop_front();
+        }
+        dq_.push_back(std::move(value));
     }
     void resize(int size) {
         max_size_ = size;
