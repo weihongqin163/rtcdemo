@@ -169,21 +169,23 @@ private:
     std::deque<T> dq_;
     size_t max_size_;
 };
+
+using VadResult = std::pair<int, AudioBuffer>;
 // 主VAD类
 class AudioVadV2 {
 public:
     AudioVadV2(const AudioVadConfigV2& config);
     virtual ~AudioVadV2();
 
-    std::pair<int, AudioBuffer> process( IAudioFrameObserver::AudioFrame& frame);
+    std::shared_ptr<VadResult> process( IAudioFrameObserver::AudioFrame& frame);
 
     
 protected:
     // 辅助方法
     inline bool isVadActive( IAudioFrameObserver::AudioFrame& frame)  ;
 
-    std::pair<int, AudioBuffer> processStart(IAudioFrameObserver::AudioFrame& frame, bool is_active);
-    std::pair<int, AudioBuffer> processSpeaking( IAudioFrameObserver::AudioFrame& frame, bool is_active) ;
+    std::shared_ptr<VadResult> processStart(IAudioFrameObserver::AudioFrame& frame, bool is_active);
+    std::shared_ptr<VadResult> processSpeaking( IAudioFrameObserver::AudioFrame& frame, bool is_active) ;
 
 
     int getStartActiveCount();

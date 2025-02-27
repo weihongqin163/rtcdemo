@@ -85,11 +85,11 @@ AudioBuffer AudioVadV2::getAudioBuffer( IAudioFrameObserver::AudioFrame& frame) 
 void AudioVadV2::resetStopFlagList() {
     stop_flag_list_.clear();
 }
-std::pair<int, AudioBuffer> AudioVadV2::processStart(IAudioFrameObserver::AudioFrame& frame, bool is_active) {
+std::shared_ptr<VadResult> AudioVadV2::processStart(IAudioFrameObserver::AudioFrame& frame, bool is_active) {
     VadDataV2 data(frame, is_active);
     start_queue_.push(std::move(data));
     if (start_queue_.size() < start_queue_max_) {
-        return {current_state_, AudioBuffer()};
+        return std::make_shared<VadResult>(current_state_, AudioBuffer());
     }
 
     // 计算活动帧比例
@@ -111,13 +111,13 @@ std::pair<int, AudioBuffer> AudioVadV2::processStart(IAudioFrameObserver::AudioF
         resetStopFlagList();
       
         current_state_ = VAD_STATE_SPEAKING;
-        return {VAD_STATE_STARTSPEAKING, std::move(result)};
+        return std::make_shared<VadResult>(current_state_, std::move(result));
     }
     
-    return {current_state_, AudioBuffer()};
+    return std::make_shared<VadResult>(current_state_, AudioBuffer());
 }
 
-std::pair<int, AudioBuffer> AudioVadV2::processSpeaking( IAudioFrameObserver::AudioFrame& frame, bool is_active) {
+std::shared_ptr<VadResult> AudioVadV2::processSpeaking( IAudioFrameObserver::AudioFrame& frame, bool is_active) {
     // notice: no need to store audio data
 
     // validity check
@@ -141,12 +141,12 @@ std::pair<int, AudioBuffer> AudioVadV2::processSpeaking( IAudioFrameObserver::Au
         }
     }
 
-    return {current_state_, std::move(result)};
+    return std::make_shared<VadResult>(current_state_, std::move(result));
 }
 
 
 
-std::pair<int, AudioBuffer> AudioVadV2::process( IAudioFrameObserver::AudioFrame& frame) {
+std::shared_ptr<VadResult> AudioVadV2::process( IAudioFrameObserver::AudioFrame& frame) {
     bool is_active = isVadActive(frame);
     
 
@@ -160,7 +160,7 @@ std::pair<int, AudioBuffer> AudioVadV2::process( IAudioFrameObserver::AudioFrame
         }
         
         default:
-            return std::pair<int, AudioBuffer>(-1, AudioBuffer());
+            return std::make_shared<VadResult>(-1, AudioBuffer());
     }
 }
 AudioVadV2::~AudioVadV2()
