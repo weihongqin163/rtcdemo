@@ -5,7 +5,14 @@ int main(int argc, char* argv[]) {
     config.stop_rms = -60;
     IAudioFrameObserver::AudioFrame frame;
     const int FrameSize = 320; // 
-    std::pair<int, AudioBuffer> result;
+    std::shared_ptr<VadResult> result_ptr;
+
+    
+
+    
+    std::shared_ptr<VadResult> vad_result_ptr;
+
+    vad_result_ptr = std::make_shared<VadResult>(VadResult(1, AudioBuffer() ));
 
 
     AudioVadV2 vad(config);
@@ -32,7 +39,7 @@ int main(int argc, char* argv[]) {
             goto $ERROR;
         }
         // vad process
-        result = vad.process(frame);
+        result_ptr= vad.process(frame);
         // release resource
         memset (frame.buffer, 0, FrameSize);
         delete []frame.buffer;
