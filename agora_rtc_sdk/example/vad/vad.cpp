@@ -55,12 +55,11 @@ int AudioVadV2::getFrameSize( IAudioFrameObserver::AudioFrame& frame) {
  * vaddaata 做成一个pool的方式来做
  */
 AudioBuffer AudioVadV2::getAudioBuffer( FixedSizeQueue<VadDataV2>& queue, int startPos){
-    AudioBuffer buffer;
     int size = queue.size();
     int pack_num = size - startPos;
     int pack_len = getFrameSize(queue.front().audio_frame);
     // allocate mem for audio buffer
-    buffer.resize(pack_num*pack_len);
+    AudioBuffer buffer(pack_num*pack_len);
     int8_t* ptrdata = reinterpret_cast<int8_t*>(buffer.data());
     int index = 0;
     for (const auto& data : queue)
@@ -72,27 +71,25 @@ AudioBuffer AudioVadV2::getAudioBuffer( FixedSizeQueue<VadDataV2>& queue, int st
         }
     }
 
-    return buffer;
+    return std::move(buffer);
     
 }
 AudioBuffer AudioVadV2::getAudioBuffer( IAudioFrameObserver::AudioFrame& frame) {
-    AudioBuffer buffer;
     int pack_len = getFrameSize(frame);
     // allocate mem for audio buffer
-    buffer.resize(pack_len);
+    AudioBuffer buffer(pack_len);
     int8_t* ptrdata = reinterpret_cast<int8_t*>(buffer.data());
     memcpy(ptrdata , frame.buffer, pack_len);
-    return buffer;
-    
+    return std::move(buffer);
 }
 void AudioVadV2::resetStopFlagList() {
     stop_flag_list_.clear();
 }
 std::pair<int, AudioBuffer> AudioVadV2::processStart(IAudioFrameObserver::AudioFrame& frame, bool is_active) {
     VadDataV2 data(frame, is_active);
-    start_queue_.push(data);
+    start_queue_.push(std::move(data));
     if (start_queue_.size() < start_queue_max_) {
-        return {current_state_, {}};
+        return {current_state_, AudioBuffer()};
     }
 
     // 计算活动帧比例
@@ -108,17 +105,16 @@ std::pair<int, AudioBuffer> AudioVadV2::processStart(IAudioFrameObserver::AudioF
 
     if (active_percent >= config_.activePercent) {
         // 拼接音频数据
-        AudioBuffer result;
-        result = getAudioBuffer(start_queue_, 0);
+        AudioBuffer result = getAudioBuffer(start_queue_, 0);
         
         start_queue_.clear();
         resetStopFlagList();
       
         current_state_ = VAD_STATE_SPEAKING;
-        return {VAD_STATE_STARTSPEAKING, result};
+        return {VAD_STATE_STARTSPEAKING, std::move(result)};
     }
     
-    return {current_state_, {}};
+    return {current_state_, AudioBuffer()};
 }
 
 std::pair<int, AudioBuffer> AudioVadV2::processSpeaking( IAudioFrameObserver::AudioFrame& frame, bool is_active) {
@@ -127,9 +123,7 @@ std::pair<int, AudioBuffer> AudioVadV2::processSpeaking( IAudioFrameObserver::Au
     // validity check
     stop_flag_list_.push(is_active?1:0);
     
-    AudioBuffer result;
-    
-    result = getAudioBuffer(frame);
+    AudioBuffer result = getAudioBuffer(frame);
    
     if (stop_flag_list_.size() >= stop_flag_max_) {
         // 计算静音比例
@@ -147,7 +141,7 @@ std::pair<int, AudioBuffer> AudioVadV2::processSpeaking( IAudioFrameObserver::Au
         }
     }
 
-    return {current_state_, result};
+    return {current_state_, std::move(result)};
 }
 
 
@@ -158,15 +152,11 @@ std::pair<int, AudioBuffer> AudioVadV2::process( IAudioFrameObserver::AudioFrame
 
     switch (current_state_) {
         case VAD_STATE_NONSPEAKING: {
-            std::pair<int, AudioBuffer> result = processStart(frame, is_active);
-            
-            return result;
+             return processStart(frame, is_active);
         }
         
         case VAD_STATE_SPEAKING: {
-            std::pair<int, AudioBuffer> result = processSpeaking(frame, is_active);
-           
-            return result;
+            return processSpeaking(frame, is_active);
         }
         
         default:

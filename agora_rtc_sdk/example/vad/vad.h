@@ -66,6 +66,10 @@ struct VadDataV2 {
         is_activity = false;
         memset (&audio_frame, 0, sizeof(audio_frame));
     }
+    // 禁用拷贝构造和赋值操作符
+    VadDataV2(const VadDataV2&) = delete;
+    VadDataV2& operator=(const VadDataV2&) = delete;
+
 };
 
 //fixed size queue
