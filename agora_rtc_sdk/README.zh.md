@@ -12,3 +12,13 @@
 **third_party**目录包括了一些有用的第三方库，可以认为这部分与SDK本身无关，你无需过分关注这一目录。
 
 **上述** 文件夹中均有更加详细的ReadMe说明，强烈建议你仔细阅读每个ReadMe文档，可以帮助你更顺利的使用RTSA_Pro！
+
+date: 2025-04-02
+目录：examples/vad
+用途：增加了vad.h, vad.cpp
+用来实现在aivad v2 算法基础上的vad 判断
+用法：参考main.cpp。
+和rtc c++sdk的配合：
+在c++ sdk的audioFrameObserver的onPlaybackBeforeMixing回调中，将frame数据传入到vad，这样就可以获得vad检测的结果
+具体可以参考main.cpp。vadconfigure参数的含义可以咨询author。
+
