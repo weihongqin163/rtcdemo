@@ -7,13 +7,11 @@
 
 //#define MY_TEST
 #ifdef MY_TEST
+#include "audioframetest.h"
+#else
 #include "AgoraMediaBase.h"
 using namespace agora::rtc;
 using namespace agora::media;
-
-#else
-#include "audioframetest.h"
-
 #endif
 
 // 类型定义和常量
